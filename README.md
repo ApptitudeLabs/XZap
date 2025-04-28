@@ -33,16 +33,16 @@ make build-mac
 ## CLI Usage Examples
 
 ```bash
-xclean list sims                        # List all simulators above 3GB
-xclean list sims --threshold 2          # List simulators larger than 2GB
-xclean list sims --summary-only         # Only print total space and counts
-xclean list sims --output report.txt    # Save full report to file
-xclean list sims --clean                # Interactively delete large sims
-xclean list sims --clean --dry-run      # Simulate what would be cleaned
-xclean list sims --clean --force-clean  # Delete without confirmation
-xclean list runtimes                    # List installed Xcode runtimes
-xclean remove runtime "iOS 17.5"        # Remove a specific runtime
-xclean remove runtime "iOS 17.5" --force # Force remove runtime without asking
+xclean list sims                          # List all simulators above 3GB
+xclean list sims --threshold 2            # List simulators larger than 2GB
+xclean list sims --summary-only           # Only print total space and counts
+xclean list sims --output report.txt      # Save full report to file
+xclean list sims --clean                  # Interactively delete large sims
+xclean list sims --clean --dry-run        # Simulate what would be cleaned
+xclean list sims --clean --force-clean    # Delete without confirmation
+xclean list runtimes                      # List installed Xcode runtimes
+xclean remove runtime "iOS 17.5"          # Remove a specific runtime
+xclean remove runtime "iOS 17.5" --force  # Force remove runtime without asking
 ```
 
 ---
