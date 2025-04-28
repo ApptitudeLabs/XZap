@@ -51,7 +51,7 @@ xclean remove runtime "iOS 17.5" --force # Force remove runtime without asking
 
 > Professional terminal output with emoji indicators, colors, and spinner animations.
 
-![screenshot](./assets/screenshot.png)
+<!-- ![screenshot](./assets/screenshot.png) -->
 
 ---
 
@@ -66,5 +66,5 @@ xclean remove runtime "iOS 17.5" --force # Force remove runtime without asking
 
 ## License
 
-MIT © [YourName](https://github.com/yourname)
+MIT © [Apptitude Labs](https://github.com/ApptitudeLabs)
 
