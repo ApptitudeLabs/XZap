@@ -1,0 +1,32 @@
+project_name: xclean
+
+builds:
+  - id: xclean-macos
+    main: ./main.go
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - bin/xclean_darwin_amd64
+      - bin/xclean_darwin_arm64
+
+release:
+  github:
+    owner: apptitudelabs
+    name: xclean
+
+brew:
+  name: xclean
+  tap:
+    owner: apptitudelabs
+    name: homebrew-xclean
+  install: |
+    bin.install "xclean"
