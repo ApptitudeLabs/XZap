@@ -8,9 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version is set at build time via ldflags
+var Version = "dev"
+
 var rootCmd = &cobra.Command{
-	Use:   "xclean",
-	Short: "🧹 xclean by Apptitude Labs — Clean up Xcode junk fast!",
+	Use:     "xclean",
+	Short:   "🧹 xclean by Apptitude Labs — Clean up Xcode junk fast!",
+	Version: Version,
 	Long: `
 🧹 xclean by Apptitude Labs
 

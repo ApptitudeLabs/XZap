@@ -9,24 +9,24 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w
+      - -s -w -X xclean/cmd.Version={{.Version}}
 
 archives:
   - format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     files:
-      - bin/xclean_darwin_amd64
-      - bin/xclean_darwin_arm64
+      - LICENSE
+      - README.md
 
 release:
   github:
-    owner: apptitudelabs
+    owner: ApptitudeLabs
     name: xclean
 
-brew:
-  name: xclean
-  tap:
-    owner: apptitudelabs
-    name: homebrew-xclean
-  install: |
-    bin.install "xclean"
+brews:
+  - name: xclean
+    repository:
+      owner: ApptitudeLabs
+      name: homebrew-xclean
+    install: |
+      bin.install "xclean"

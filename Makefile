@@ -1,14 +1,19 @@
-.PHONY: all clean build-mac release-tar
+.PHONY: all clean build-mac release-tar test
+
+VERSION ?= dev
 
 all: build-mac
 
 build-mac: build-mac-amd64 build-mac-arm64
 
 build-mac-amd64:
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/xclean_darwin_amd64 main.go
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X xclean/cmd.Version=$(VERSION)" -o bin/xclean_darwin_amd64 main.go
 
 build-mac-arm64:
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/xclean_darwin_arm64 main.go
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X xclean/cmd.Version=$(VERSION)" -o bin/xclean_darwin_arm64 main.go
+
+test:
+	go test -v ./...
 
 clean:
 	rm -rf bin/* dist/*
