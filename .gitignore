@@ -1,0 +1,49 @@
+# Binaries
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+coverage.html
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug
+debug
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.tar.gz
+*.zip
+
+# goreleaser
+dist/
+
+# Temporary files
+tmp/
+temp/

@@ -1,6 +1,6 @@
 .PHONY: all clean build-mac release-tar test
 
-VERSION ?= dev
+VERSION ?= 0.1.0
 
 all: build-mac
 
