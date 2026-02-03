@@ -40,9 +40,11 @@ var cleanSimsCmd = &cobra.Command{
 			size := utils.CalculateDirSize(dataPath)
 
 			if size > 2<<30 {
-				name := nameMap[uuid]
-				if name == "" {
-					name = uuid
+				var name string
+				if info, found := nameMap[uuid]; found {
+					name = info.Name
+				} else {
+					name = fmt.Sprintf("Orphaned (%s)", uuid)
 				}
 				toDelete = append(toDelete, struct {
 					path string

@@ -17,9 +17,10 @@ import (
 )
 
 type SimulatorInfo struct {
-	Name string
-	Size int64
-	UDID string
+	Name       string
+	Size       int64
+	UDID       string
+	IsOrphaned bool
 }
 
 func CalculateDirSize(root string) int64 {
@@ -59,17 +60,23 @@ func CalculateDirSize(root string) int64 {
 }
 
 type Device struct {
-	Name    string `json:"name"`
-	UDID    string `json:"udid"`
-	Runtime string `json:"runtime"`
-	State   string `json:"state"`
+	Name        string `json:"name"`
+	UDID        string `json:"udid"`
+	Runtime     string `json:"runtime"`
+	State       string `json:"state"`
+	IsAvailable bool   `json:"isAvailable"`
 }
 
 type Devices struct {
 	Devices map[string][]Device `json:"devices"`
 }
 
-func GetSimFriendlyNames() map[string]string {
+type SimNameInfo struct {
+	Name       string
+	IsOrphaned bool
+}
+
+func GetSimFriendlyNames() map[string]SimNameInfo {
 	out, err := exec.Command("xcrun", "simctl", "list", "--json", "devices").Output()
 	if err != nil {
 		fmt.Println("Failed to run simctl:", err)
@@ -79,7 +86,7 @@ func GetSimFriendlyNames() map[string]string {
 	var sims Devices
 	json.Unmarshal(out, &sims)
 
-	nameMap := make(map[string]string)
+	nameMap := make(map[string]SimNameInfo)
 	for runtime, devices := range sims.Devices {
 		simplifiedRuntime := strings.TrimPrefix(runtime, "com.apple.CoreSimulator.SimRuntime.")
 		parts := strings.SplitN(simplifiedRuntime, "-", 2)
@@ -89,7 +96,14 @@ func GetSimFriendlyNames() map[string]string {
 			simplifiedRuntime = fmt.Sprintf("%s %s", platform, version)
 		}
 		for _, dev := range devices {
-			nameMap[dev.UDID] = fmt.Sprintf("%s (%s)", dev.Name, simplifiedRuntime)
+			displayName := fmt.Sprintf("%s (%s)", dev.Name, simplifiedRuntime)
+			if !dev.IsAvailable {
+				displayName = fmt.Sprintf("Orphaned %s (%s)", dev.Name, simplifiedRuntime)
+			}
+			nameMap[dev.UDID] = SimNameInfo{
+				Name:       displayName,
+				IsOrphaned: !dev.IsAvailable,
+			}
 		}
 	}
 	return nameMap
@@ -100,10 +114,18 @@ func ListSimulators(showAll, showCriticalOnly bool, thresholdGB int, outputFile 
 
 	criticalSims, normalSims := splitSimulators(sims, thresholdGB)
 
+	// Count orphaned simulators
+	orphanedCount := 0
+	for _, sim := range sims {
+		if sim.IsOrphaned {
+			orphanedCount++
+		}
+	}
+
 	var out strings.Builder
 
 	printSimulators(criticalSims, normalSims, &out)
-	printSummary(totalSize, biggestSim, len(criticalSims), len(normalSims), &out)
+	printSummary(totalSize, biggestSim, len(criticalSims), len(normalSims), orphanedCount, &out)
 
 	if outputFile != "" {
 		err := os.WriteFile(outputFile, []byte(out.String()), 0644)
@@ -148,15 +170,21 @@ func gatherSimulators(showAll, showCriticalOnly bool) ([]SimulatorInfo, int64, S
 			continue
 		}
 
-		friendlyName, found := nameMap[uuid]
-		if !found {
-			friendlyName = uuid
+		var friendlyName string
+		var isOrphaned bool
+		if info, found := nameMap[uuid]; found {
+			friendlyName = info.Name
+			isOrphaned = info.IsOrphaned
+		} else {
+			friendlyName = fmt.Sprintf("Orphaned (%s)", uuid)
+			isOrphaned = true
 		}
 
 		sim := SimulatorInfo{
-			Name: friendlyName,
-			Size: size,
-			UDID: uuid,
+			Name:       friendlyName,
+			Size:       size,
+			UDID:       uuid,
+			IsOrphaned: isOrphaned,
 		}
 
 		sims = append(sims, sim)
@@ -211,7 +239,10 @@ func printSimulators(criticalSims, normalSims []SimulatorInfo, out *strings.Buil
 		out.WriteString("CRITICAL Simulators:\n")
 		for _, sim := range criticalSims {
 			line := fmt.Sprintf("CRITICAL: %s — %.2f GB\n", sim.Name, float64(sim.Size)/(1<<30))
-			if sim.Size > 10<<30 {
+			if sim.IsOrphaned {
+				color.New(color.FgHiYellow, color.Bold).Print("⚠️  " + line)
+				out.WriteString("⚠️  " + line)
+			} else if sim.Size > 10<<30 {
 				color.New(color.FgHiRed, color.Bold).Print("🔥 " + line)
 				out.WriteString("🔥 " + line)
 			} else {
@@ -228,15 +259,20 @@ func printSimulators(criticalSims, normalSims []SimulatorInfo, out *strings.Buil
 		out.WriteString("Normal Simulators:\n")
 		for _, sim := range normalSims {
 			line := fmt.Sprintf("%s — %.2f GB\n", sim.Name, float64(sim.Size)/(1<<30))
-			color.Green(line)
-			out.WriteString(line)
+			if sim.IsOrphaned {
+				color.Yellow("⚠️  " + line)
+				out.WriteString("⚠️  " + line)
+			} else {
+				color.Green(line)
+				out.WriteString(line)
+			}
 		}
 		fmt.Println()
 		out.WriteString("\n")
 	}
 }
 
-func printSummary(totalSize int64, biggestSim SimulatorInfo, criticalCount, normalCount int, out *strings.Builder) {
+func printSummary(totalSize int64, biggestSim SimulatorInfo, criticalCount, normalCount, orphanedCount int, out *strings.Builder) {
 	fmt.Println()
 
 	if biggestSim.Size > 10<<30 {
@@ -251,8 +287,13 @@ func printSummary(totalSize int64, biggestSim SimulatorInfo, criticalCount, norm
 	out.WriteString(fmt.Sprintf("\n📱 Total Simulator Space Used: %.2f GB\n", float64(totalSize)/(1<<30)))
 
 	fmt.Println()
-	color.Cyan("Summary: %d Critical Sims, %d Normal Sims", criticalCount, normalCount)
-	out.WriteString(fmt.Sprintf("Summary: %d Critical Sims, %d Normal Sims\n", criticalCount, normalCount))
+	if orphanedCount > 0 {
+		color.Cyan("Summary: %d Critical Sims, %d Normal Sims, %d Orphaned (runtime unavailable)", criticalCount, normalCount, orphanedCount)
+		out.WriteString(fmt.Sprintf("Summary: %d Critical Sims, %d Normal Sims, %d Orphaned (runtime unavailable)\n", criticalCount, normalCount, orphanedCount))
+	} else {
+		color.Cyan("Summary: %d Critical Sims, %d Normal Sims", criticalCount, normalCount)
+		out.WriteString(fmt.Sprintf("Summary: %d Critical Sims, %d Normal Sims\n", criticalCount, normalCount))
+	}
 }
 
 func interactiveClean(sims []SimulatorInfo) {

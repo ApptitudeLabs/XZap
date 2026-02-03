@@ -15,7 +15,9 @@ type ListItem struct {
 	Subtitle   string
 	Size       int64
 	IsCritical bool
+	IsOrphaned bool
 	Selected   bool
+	Section    string // Group/section name for grouped lists
 }
 
 // List is a selectable list component with multi-select support
@@ -233,9 +235,34 @@ func (l List) View() string {
 		end = len(l.Items)
 	}
 
+	currentSection := ""
 	for i := start; i < end; i++ {
 		item := l.Items[i]
 		isActive := i == l.cursor && l.focused
+
+		// Render section header if section changed
+		if item.Section != "" && item.Section != currentSection {
+			currentSection = item.Section
+			if b.Len() > 0 {
+				b.WriteString("\n") // Extra spacing between sections
+			}
+			headerStyle := lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color("#cad3f5")).
+				MarginBottom(0)
+			// Section-specific colors
+			switch item.Section {
+			case "Orphaned":
+				headerStyle = headerStyle.Foreground(lipgloss.Color("#f4b8e4"))
+				b.WriteString(headerStyle.Render("⚠️  "+item.Section) + "\n")
+			case "Critical":
+				headerStyle = headerStyle.Foreground(lipgloss.Color("#ed8796"))
+				b.WriteString(headerStyle.Render("🔥 "+item.Section) + "\n")
+			default:
+				headerStyle = headerStyle.Foreground(lipgloss.Color("#a6da95"))
+				b.WriteString(headerStyle.Render("   "+item.Section) + "\n")
+			}
+		}
 
 		// Build the line
 		var line strings.Builder
@@ -258,7 +285,13 @@ func (l List) View() string {
 
 		// Title
 		titleStyle := lipgloss.NewStyle()
-		if item.IsCritical {
+		if item.IsOrphaned {
+			if isActive {
+				titleStyle = titleStyle.Foreground(lipgloss.Color("#f4b8e4")).Bold(true)
+			} else {
+				titleStyle = titleStyle.Foreground(lipgloss.Color("#f4b8e4"))
+			}
+		} else if item.IsCritical {
 			if isActive {
 				titleStyle = titleStyle.Foreground(lipgloss.Color("#ed8796")).Bold(true)
 			} else {

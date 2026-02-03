@@ -8,7 +8,8 @@
 
 - 🖥️ **Interactive TUI** — Beautiful terminal UI with tabs for Simulators, Caches, and Runtimes
 - 🧹 **Clean** DerivedData, Archives, ModuleCache, SwiftPM Cache
-- 📱 **List simulators** with storage usage
+- 📱 **List simulators** with storage usage, grouped by status
+- ⚠️ **Orphaned simulator detection** — Identifies simulators whose runtime was deleted
 - 📈 **Highlight critical simulators** (above 3GB or your threshold)
 - 🧹 **List and remove runtimes**
 - 🔄 **Interactive cleanup** of large simulators
@@ -47,10 +48,20 @@ xclean
 | `Tab` | Switch to next view |
 | `Shift+Tab` | Switch to previous view |
 | `1` / `2` / `3` | Jump to Simulators / Caches / Runtimes |
-| `↑` / `↓` | Navigate list |
-| `Enter` | Select / Confirm |
-| `d` | Delete selected item |
+| `j` / `k` or `↑` / `↓` | Navigate list |
+| `Space` | Toggle selection |
+| `a` | Select all critical items |
+| `A` | Select all items |
+| `d` | Clear selection |
+| `Enter` | Delete selected items |
+| `r` | Refresh list |
 | `q` | Quit |
+
+**Simulator grouping:**
+Simulators are organized into three sections:
+- ⚠️ **Orphaned** — Simulators whose runtime is no longer available (safe to delete)
+- 🔥 **Critical** — Simulators using more than 3GB
+- **Normal** — All other simulators
 
 ---
 

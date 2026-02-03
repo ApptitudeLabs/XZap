@@ -82,23 +82,48 @@ func LoadSimulators() tea.Msg {
 			continue
 		}
 
-		friendlyName, found := nameMap[uuid]
-		if !found {
-			friendlyName = uuid
+		var friendlyName string
+		var isOrphaned bool
+		if info, found := nameMap[uuid]; found {
+			friendlyName = info.Name
+			isOrphaned = info.IsOrphaned
+			// Strip "Orphaned " prefix since we show it in section header
+			if isOrphaned {
+				friendlyName = strings.TrimPrefix(friendlyName, "Orphaned ")
+			}
+		} else {
+			friendlyName = uuid // Just show UUID, section header shows "Orphaned"
+			isOrphaned = true
 		}
 
 		isCritical := size >= 3<<30 // 3GB threshold
+
+		// Determine section
+		var section string
+		if isOrphaned {
+			section = "Orphaned"
+		} else if isCritical {
+			section = "Critical"
+		} else {
+			section = "Normal"
+		}
 
 		items = append(items, components.ListItem{
 			ID:         uuid,
 			Title:      friendlyName,
 			Size:       size,
 			IsCritical: isCritical,
+			IsOrphaned: isOrphaned,
+			Section:    section,
 		})
 	}
 
-	// Sort by size descending
+	// Sort by section (Orphaned > Critical > Normal), then by size descending
+	sectionOrder := map[string]int{"Orphaned": 0, "Critical": 1, "Normal": 2}
 	sort.Slice(items, func(i, j int) bool {
+		if sectionOrder[items[i].Section] != sectionOrder[items[j].Section] {
+			return sectionOrder[items[i].Section] < sectionOrder[items[j].Section]
+		}
 		return items[i].Size > items[j].Size
 	})
 
