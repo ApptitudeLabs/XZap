@@ -2,7 +2,6 @@
 
 > Clean up your Xcode workspace, simulators, runtimes, and more — with style.
 
-![xclean logo](./assets/logo.png)
 ---
 
 ## Features
