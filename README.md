@@ -85,9 +85,13 @@ xclean --cli remove runtime "iOS 17.5" --force  # Force remove runtime without a
 
 ## Screenshot
 
-> Interactive TUI with tabbed navigation, Catppuccin theme, and real-time updates.
+<p align="center">
+  <img src="./assets/xclean_screenshot.png" alt="xclean screenshot" width="800">
+</p>
 
-![xclean screenshot](./assets/xclean_screenshot.png)
+<p align="center">
+  <em>Interactive TUI with tabbed navigation, Catppuccin theme, and real-time updates.</em>
+</p>
 
 ---
 
