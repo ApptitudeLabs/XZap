@@ -1,6 +1,6 @@
 # Xclean
 
-> Clean up your Xcode workspace, simulators, runtimes, and more — with style.
+> Reclaim disk space by cleaning Xcode simulators, runtimes, and caches — in a TUI.
 
 ---
 
