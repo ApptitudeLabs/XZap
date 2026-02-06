@@ -1,7 +1,7 @@
-project_name: xclean
+project_name: xzap
 
 builds:
-  - id: xclean-macos
+  - id: xzap-macos
     main: ./main.go
     goos:
       - darwin
@@ -9,7 +9,7 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X xclean/cmd.Version={{.Version}}
+      - -s -w -X xzap/cmd.Version={{.Version}}
 
 archives:
   - format: tar.gz
@@ -21,12 +21,12 @@ archives:
 release:
   github:
     owner: ApptitudeLabs
-    name: xclean
+    name: xzap
 
 brews:
-  - name: xclean
+  - name: xzap
     repository:
       owner: ApptitudeLabs
-      name: homebrew-xclean
+      name: homebrew-xzap
     install: |
-      bin.install "xclean"
+      bin.install "xzap"

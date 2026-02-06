@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"xclean/utils"
+	"xzap/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -12,16 +12,17 @@ import (
 var Version = "dev"
 
 var rootCmd = &cobra.Command{
-	Use:     "xclean",
-	Short:   "🧹 xclean by Apptitude Labs — Clean up Xcode junk fast!",
+	Use:     "xzap",
+	Short:   "⚡ XZap by Apptitude Labs — The Ultimate Xcode Cleaner",
 	Version: Version,
 	Long: `
-🧹 xclean by Apptitude Labs
+⚡ XZap by Apptitude Labs — The Ultimate Xcode Cleaner
 
 The fastest way to clean your Xcode workspace, simulators, and runtimes.
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		utils.PrintBanner()
+		utils.CheckXcrun()
 	},
 }
 

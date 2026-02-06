@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"strings"
-	"xclean/utils"
+	"xzap/utils"
 
 	"github.com/spf13/cobra"
 )

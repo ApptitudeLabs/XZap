@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"xclean/tui/components"
-	"xclean/utils"
+	"xzap/tui/components"
+	"xzap/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"

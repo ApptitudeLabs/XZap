@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"xclean/utils"
+	"xzap/utils"
 
 	"github.com/spf13/cobra"
 )

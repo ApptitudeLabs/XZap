@@ -22,13 +22,14 @@ type ListItem struct {
 
 // List is a selectable list component with multi-select support
 type List struct {
-	Items       []ListItem
-	cursor      int
-	width       int
-	height      int
-	focused     bool
-	showSize    bool
-	multiSelect bool
+	Items        []ListItem
+	cursor       int
+	scrollOffset int
+	width        int
+	height       int
+	focused      bool
+	showSize     bool
+	multiSelect  bool
 }
 
 // NewList creates a new list component
@@ -146,6 +147,7 @@ func (l *List) DeselectAll() {
 func (l *List) MoveUp() {
 	if l.cursor > 0 {
 		l.cursor--
+		// Scroll adjustment is handled in View() to account for section headers
 	}
 }
 
@@ -153,6 +155,7 @@ func (l *List) MoveUp() {
 func (l *List) MoveDown() {
 	if l.cursor < len(l.Items)-1 {
 		l.cursor++
+		// Scroll adjustment is handled in View() to account for section headers
 	}
 }
 
@@ -195,7 +198,7 @@ func (l *List) Update(msg tea.Msg) tea.Cmd {
 }
 
 // View renders the list
-func (l List) View() string {
+func (l *List) View() string {
 	if len(l.Items) == 0 {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#666666")).
@@ -210,33 +213,60 @@ func (l List) View() string {
 		visibleHeight = 20 // Reasonable default
 	}
 
-	// Always limit to visible height
-	start := 0
-	end := len(l.Items)
-
-	// Keep cursor in view with scrolling
-	if l.cursor < start {
-		start = l.cursor
-	} else if l.cursor >= start+visibleHeight {
-		start = l.cursor - visibleHeight + 1
-	}
+	// Use persisted scroll offset
+	start := l.scrollOffset
 
 	// Ensure start is valid
 	if start < 0 {
 		start = 0
 	}
-	if start > len(l.Items)-visibleHeight && len(l.Items) > visibleHeight {
-		start = len(l.Items) - visibleHeight
+
+	// Count how many extra lines are needed for section headers from start to cursor
+	// This ensures the cursor is always visible
+	extraLinesNeeded := 0
+	if l.cursor >= start {
+		currentSection := ""
+		for i := start; i <= l.cursor && i < len(l.Items); i++ {
+			if l.Items[i].Section != "" && l.Items[i].Section != currentSection {
+				if currentSection != "" {
+					extraLinesNeeded++ // Extra spacing between sections
+				}
+				extraLinesNeeded++ // Section header
+				currentSection = l.Items[i].Section
+			}
+		}
 	}
 
-	// Calculate end
-	end = start + visibleHeight
-	if end > len(l.Items) {
-		end = len(l.Items)
+	// Adjust visible items count to account for section headers
+	effectiveVisibleItems := visibleHeight - extraLinesNeeded
+	if effectiveVisibleItems < 5 {
+		effectiveVisibleItems = 5
 	}
+
+	// Keep cursor in view with scrolling
+	if l.cursor < start {
+		start = l.cursor
+	} else if l.cursor >= start+effectiveVisibleItems {
+		start = l.cursor - effectiveVisibleItems + 1
+	}
+
+	// Re-validate start after adjustment
+	if start < 0 {
+		start = 0
+	}
+	if start > len(l.Items)-1 {
+		start = len(l.Items) - 1
+	}
+
+	// Sync scroll offset for next render
+	l.scrollOffset = start
+
+	// Calculate end - show all remaining items from start
+	end := len(l.Items)
 
 	currentSection := ""
-	for i := start; i < end; i++ {
+	linesRendered := 0
+	for i := start; i < end && linesRendered < visibleHeight; i++ {
 		item := l.Items[i]
 		isActive := i == l.cursor && l.focused
 
@@ -245,6 +275,10 @@ func (l List) View() string {
 			currentSection = item.Section
 			if b.Len() > 0 {
 				b.WriteString("\n") // Extra spacing between sections
+				linesRendered++
+				if linesRendered >= visibleHeight {
+					break
+				}
 			}
 			headerStyle := lipgloss.NewStyle().
 				Bold(true).
@@ -257,10 +291,14 @@ func (l List) View() string {
 				b.WriteString(headerStyle.Render("⚠️  "+item.Section) + "\n")
 			case "Critical":
 				headerStyle = headerStyle.Foreground(lipgloss.Color("#ed8796"))
-				b.WriteString(headerStyle.Render("🔥 "+item.Section) + "\n")
+				b.WriteString(headerStyle.Render("💾 "+item.Section) + "\n")
 			default:
 				headerStyle = headerStyle.Foreground(lipgloss.Color("#a6da95"))
 				b.WriteString(headerStyle.Render("   "+item.Section) + "\n")
+			}
+			linesRendered++
+			if linesRendered >= visibleHeight {
+				break
 			}
 		}
 
@@ -315,12 +353,14 @@ func (l List) View() string {
 		if len(title) > titleWidth {
 			title = title[:titleWidth-3] + "..."
 		}
-		line.WriteString(titleStyle.Render(title))
+		// Pad title to fixed width for size alignment
+		paddedTitle := lipgloss.NewStyle().Width(titleWidth).Render(title)
+		line.WriteString(titleStyle.Render(paddedTitle))
 
 		// Size - display right after title with small spacing
 		if l.showSize {
 			sizeStr := formatSizeCompact(item.Size)
-			line.WriteString("  ") // Just 2 spaces between title and size
+			line.WriteString(" ") // Single space between title and size
 
 			sizeStyle := lipgloss.NewStyle()
 			if item.IsCritical {
@@ -332,14 +372,23 @@ func (l List) View() string {
 
 			// Fire emoji for >10GB
 			if item.Size > 10<<30 {
-				line.WriteString(" 🔥")
+				line.WriteString(" 💾")
 			}
 		}
 
 		b.WriteString(line.String())
-		if i < end-1 {
+		linesRendered++
+		if linesRendered < visibleHeight {
 			b.WriteString("\n")
 		}
+	}
+
+	// Pad to consistent height to prevent layout shifts
+	for linesRendered < visibleHeight {
+		if linesRendered > 0 {
+			b.WriteString("\n")
+		}
+		linesRendered++
 	}
 
 	return b.String()

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"xclean/tui/components"
+	"xzap/tui/components"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -125,7 +125,7 @@ func deleteRuntime(identifier, name string) tea.Cmd {
 }
 
 func logDeletion(name string) {
-	f, err := os.OpenFile(os.Getenv("HOME")+"/.xclean.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(os.Getenv("HOME")+"/.xzap.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}

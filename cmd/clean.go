@@ -6,7 +6,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"xclean/utils"
+	"xzap/utils"
 )
 
 var dryRun bool

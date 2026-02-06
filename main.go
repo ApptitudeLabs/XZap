@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"xclean/cmd"
-	"xclean/tui"
+	"xzap/cmd"
+	"xzap/tui"
 )
 
 func main() {

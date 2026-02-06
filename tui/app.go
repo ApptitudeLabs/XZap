@@ -5,13 +5,14 @@ import (
 	"os"
 	"strings"
 
-	"xclean/cmd"
-	"xclean/tui/views"
+	"xzap/cmd"
+	"xzap/tui/components"
+	"xzap/tui/views"
+	"xzap/utils"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/common-nighthawk/go-figure"
 )
 
 // Tab indices
@@ -23,15 +24,23 @@ const (
 
 var tabs = []string{"Simulators", "Caches", "Runtimes"}
 
+// XcrunCheckMsg is sent after checking for xcrun availability
+type XcrunCheckMsg struct {
+	Available bool
+}
+
 // Model is the main TUI model
 type Model struct {
-	activeTab  int
-	simulators views.SimulatorsModel
-	caches     views.CachesModel
-	runtimes   views.RuntimesModel
-	width      int
-	height     int
-	ready      bool
+	activeTab   int
+	simulators  views.SimulatorsModel
+	caches      views.CachesModel
+	runtimes    views.RuntimesModel
+	width       int
+	height      int
+	ready       bool
+	errorDialog components.ErrorDialog
+	hasXcrun    bool
+	xcrunChecked bool
 }
 
 // NewModel creates the main TUI model
@@ -44,9 +53,15 @@ func NewModel() Model {
 	}
 }
 
+// checkXcrun checks if xcrun is available
+func checkXcrun() tea.Msg {
+	return XcrunCheckMsg{Available: utils.IsXcrunAvailable()}
+}
+
 // Init initializes the model
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
+		checkXcrun,
 		m.simulators.Init(),
 		m.caches.Init(),
 		m.runtimes.Init(),
@@ -58,6 +73,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case XcrunCheckMsg:
+		m.xcrunChecked = true
+		m.hasXcrun = msg.Available
+		if !msg.Available {
+			m.errorDialog = components.NewErrorDialog(
+				"Xcode Command Line Tools Required",
+				"xcrun was not found on your system.\n\n"+
+					"Please install Xcode Command Line Tools:\n"+
+					"  xcode-select --install\n\n"+
+					"Press any key to exit.",
+			)
+			m.errorDialog.SetSize(55)
+		}
+		return m, nil
+
+	case components.ErrorDismissed:
+		// If xcrun is missing, quit the app
+		if !m.hasXcrun {
+			return m, tea.Quit
+		}
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -70,6 +107,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.runtimes.SetSize(m.width-4, contentHeight)
 
 	case tea.KeyMsg:
+		// Handle error dialog first
+		if m.errorDialog.IsVisible() {
+			cmd := m.errorDialog.Update(msg)
+			return m, cmd
+		}
+
 		// Global keys
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -131,6 +174,11 @@ func (m Model) View() string {
 		return "Initializing..."
 	}
 
+	// Show error dialog if xcrun is not available
+	if m.errorDialog.IsVisible() {
+		return m.errorDialog.CenterInView(m.width, m.height)
+	}
+
 	var b strings.Builder
 
 	// Header
@@ -152,24 +200,27 @@ func (m Model) View() string {
 }
 
 func (m Model) renderHeader() string {
-	banner := figure.NewFigure("xclean", "slant", true)
-	// Catppuccin Macchiato colors
-	bannerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#8aadf4")) // Blue
+	// Catppuccin Macchiato colors for each letter
+	blue := lipgloss.NewStyle().Foreground(lipgloss.Color("#8aadf4"))    // X
+	magenta := lipgloss.NewStyle().Foreground(lipgloss.Color("#c6a0f6")) // ZAP
 
-	versionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#6e738d")) // Overlay0
+	versionStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#6e738d"))
+	byLineStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#a5adcb"))
+	subtitleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#cad3f5"))
 
-	byLineStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#a5adcb")) // Subtext0
+	// Build colorful ASCII banner
+	var b strings.Builder
+	b.WriteString(blue.Render(" ██╗  ██╗") + magenta.Render("███████╗") + magenta.Render(" █████╗ ") + magenta.Render("██████╗ ") + versionStyle.Render(" v"+cmd.Version) + "\n")
+	b.WriteString(blue.Render(" ╚██╗██╔╝") + magenta.Render("╚══███╔╝") + magenta.Render("██╔══██╗") + magenta.Render("██╔══██╗") + "\n")
+	b.WriteString(blue.Render("  ╚███╔╝ ") + magenta.Render("  ███╔╝ ") + magenta.Render("███████║") + magenta.Render("██████╔╝") + "\n")
+	b.WriteString(blue.Render("  ██╔██╗ ") + magenta.Render(" ███╔╝  ") + magenta.Render("██╔══██║") + magenta.Render("██╔═══╝ ") + "\n")
+	b.WriteString(blue.Render(" ██╔╝ ██╗") + magenta.Render("███████╗") + magenta.Render("██║  ██║") + magenta.Render("██║     ") + "\n")
+	b.WriteString(blue.Render(" ╚═╝  ╚═╝") + magenta.Render("╚══════╝") + magenta.Render("╚═╝  ╚═╝") + magenta.Render("╚═╝     ") + "\n")
+	b.WriteString("\n")
+	b.WriteString(byLineStyle.Render("            from Apptitude Labs") + "\n\n")
+	b.WriteString(subtitleStyle.Render("      The Ultimate Xcode Cleaner") + "\n")
 
-	subtitleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#8087a2")). // Overlay1
-		Italic(true)
-
-	return bannerStyle.Render(banner.String()) + versionStyle.Render("  v"+cmd.Version) + "\n" +
-		byLineStyle.Render("        from Apptitude Labs") + "\n\n" +
-		subtitleStyle.Render("  The fastest way to clean your Xcode workspace") + "\n"
+	return b.String()
 }
 
 func (m Model) renderTabs() string {

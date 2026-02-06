@@ -7,10 +7,10 @@ all: build-mac
 build-mac: build-mac-amd64 build-mac-arm64
 
 build-mac-amd64:
-	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X xclean/cmd.Version=$(VERSION)" -o bin/xclean_darwin_amd64 main.go
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X xzap/cmd.Version=$(VERSION)" -o bin/xzap_darwin_amd64 main.go
 
 build-mac-arm64:
-	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X xclean/cmd.Version=$(VERSION)" -o bin/xclean_darwin_arm64 main.go
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X xzap/cmd.Version=$(VERSION)" -o bin/xzap_darwin_arm64 main.go
 
 test:
 	go test -v ./...
@@ -20,8 +20,8 @@ clean:
 
 release-tar:
 	mkdir -p dist
-	tar -czvf dist/xclean_darwin_amd64.tar.gz -C bin xclean_darwin_amd64
-	tar -czvf dist/xclean_darwin_arm64.tar.gz -C bin xclean_darwin_arm64
+	tar -czvf dist/xzap_darwin_amd64.tar.gz -C bin xzap_darwin_amd64
+	tar -czvf dist/xzap_darwin_arm64.tar.gz -C bin xzap_darwin_arm64
 
 goreleaser:
 	goreleaser release --clean --skip-validate --skip-publish

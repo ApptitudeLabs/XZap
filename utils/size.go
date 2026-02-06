@@ -234,17 +234,31 @@ func printSimulators(criticalSims, normalSims []SimulatorInfo, out *strings.Buil
 	color.Cyan("📱 Xcode Simulators")
 	out.WriteString("\n📱 Xcode Simulators\n\n")
 
+	// Calculate max name length for alignment
+	maxNameLen := 0
+	for _, sim := range criticalSims {
+		if len(sim.Name) > maxNameLen {
+			maxNameLen = len(sim.Name)
+		}
+	}
+	for _, sim := range normalSims {
+		if len(sim.Name) > maxNameLen {
+			maxNameLen = len(sim.Name)
+		}
+	}
+
 	if len(criticalSims) > 0 {
 		color.Red("CRITICAL Simulators:")
 		out.WriteString("CRITICAL Simulators:\n")
 		for _, sim := range criticalSims {
-			line := fmt.Sprintf("CRITICAL: %s — %.2f GB\n", sim.Name, float64(sim.Size)/(1<<30))
+			name := fmt.Sprintf("%-*s", maxNameLen, sim.Name)
+			line := fmt.Sprintf("CRITICAL: %s  %6.2f GB\n", name, float64(sim.Size)/(1<<30))
 			if sim.IsOrphaned {
 				color.New(color.FgHiYellow, color.Bold).Print("⚠️  " + line)
 				out.WriteString("⚠️  " + line)
 			} else if sim.Size > 10<<30 {
-				color.New(color.FgHiRed, color.Bold).Print("🔥 " + line)
-				out.WriteString("🔥 " + line)
+				color.New(color.FgHiRed, color.Bold).Print("💾 " + line)
+				out.WriteString("💾 " + line)
 			} else {
 				color.New(color.FgRed, color.Bold).Print(line)
 				out.WriteString(line)
@@ -258,7 +272,8 @@ func printSimulators(criticalSims, normalSims []SimulatorInfo, out *strings.Buil
 		color.Cyan("Normal Simulators:")
 		out.WriteString("Normal Simulators:\n")
 		for _, sim := range normalSims {
-			line := fmt.Sprintf("%s — %.2f GB\n", sim.Name, float64(sim.Size)/(1<<30))
+			name := fmt.Sprintf("%-*s", maxNameLen, sim.Name)
+			line := fmt.Sprintf("%s  %6.2f GB\n", name, float64(sim.Size)/(1<<30))
 			if sim.IsOrphaned {
 				color.Yellow("⚠️  " + line)
 				out.WriteString("⚠️  " + line)
@@ -276,8 +291,8 @@ func printSummary(totalSize int64, biggestSim SimulatorInfo, criticalCount, norm
 	fmt.Println()
 
 	if biggestSim.Size > 10<<30 {
-		color.Yellow("📈 Biggest Simulator: 🔥 %s — %.2f GB", biggestSim.Name, float64(biggestSim.Size)/(1<<30))
-		out.WriteString(fmt.Sprintf("📈 Biggest Simulator: 🔥 %s — %.2f GB\n", biggestSim.Name, float64(biggestSim.Size)/(1<<30)))
+		color.Yellow("📈 Biggest Simulator: 💾 %s — %.2f GB", biggestSim.Name, float64(biggestSim.Size)/(1<<30))
+		out.WriteString(fmt.Sprintf("📈 Biggest Simulator: 💾 %s — %.2f GB\n", biggestSim.Name, float64(biggestSim.Size)/(1<<30)))
 	} else {
 		color.Yellow("📈 Biggest Simulator: %s — %.2f GB", biggestSim.Name, float64(biggestSim.Size)/(1<<30))
 		out.WriteString(fmt.Sprintf("📈 Biggest Simulator: %s — %.2f GB\n", biggestSim.Name, float64(biggestSim.Size)/(1<<30)))
@@ -421,7 +436,7 @@ func runtimeFolderFromIdentifier(identifier string) string {
 }
 
 func logDeletion(name string) {
-	f, err := os.OpenFile(os.Getenv("HOME")+"/.xclean.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(os.Getenv("HOME")+"/.xzap.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
