@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -90,7 +91,12 @@ var cleanSimsCmd = &cobra.Command{
 
 		for _, sim := range toDelete {
 			color.Red("🗑️  Deleting %s...", sim.name)
-			os.RemoveAll(sim.path)
+			uuid := filepath.Base(sim.path)
+			// Try xcrun simctl delete first to properly deregister the device
+			if err := exec.Command("xcrun", "simctl", "delete", uuid).Run(); err != nil {
+				// Fall back to direct removal for truly orphaned simulators
+				os.RemoveAll(sim.path)
+			}
 		}
 
 		color.Green("✅ Deleted %d simulators, freed %.2f GB", len(toDelete), float64(totalSize)/(1<<30))

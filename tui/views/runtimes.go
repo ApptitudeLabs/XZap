@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 
@@ -89,37 +90,56 @@ func LoadRuntimes() tea.Msg {
 
 	var items []components.ListItem
 	for _, runtime := range result.Runtimes {
-		if runtime.IsAvailable {
-			items = append(items, components.ListItem{
-				ID:       runtime.Identifier,
-				Title:    fmt.Sprintf("%s (%s)", runtime.Name, runtime.Version),
-				Subtitle: runtime.Identifier,
-			})
+		section := "Available"
+		isOrphaned := false
+		if !runtime.IsAvailable {
+			section = "Orphaned"
+			isOrphaned = true
 		}
+		items = append(items, components.ListItem{
+			ID:         runtime.Identifier,
+			Title:      fmt.Sprintf("%s (%s)", runtime.Name, runtime.Version),
+			Subtitle:   runtime.Identifier,
+			IsOrphaned: isOrphaned,
+			Section:    section,
+		})
 	}
+
+	// Sort: Orphaned first, then Available
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Section == "Orphaned" && items[j].Section != "Orphaned"
+	})
 
 	return RuntimesLoadedMsg{Items: items}
 }
 
-// deleteRuntime deletes a runtime (requires sudo)
+// deleteRuntime deletes a runtime
 func deleteRuntime(identifier, name string) tea.Cmd {
 	return func() tea.Msg {
-		// Get runtime folder name from identifier
 		parts := strings.Split(identifier, ".")
 		if len(parts) == 0 {
 			return RuntimeDeletedMsg{Name: name, Err: fmt.Errorf("invalid identifier")}
 		}
 		runtimeFolder := parts[len(parts)-1] + ".simruntime"
-		runtimePath := "/Library/Developer/CoreSimulator/Profiles/Runtimes/" + runtimeFolder
 
-		cmd := exec.Command("sudo", "rm", "-rf", runtimePath)
+		// Xcode 14+ downloads runtimes to the user-level path; check there first
+		userPath := os.Getenv("HOME") + "/Library/Developer/CoreSimulator/Profiles/Runtimes/" + runtimeFolder
+		systemPath := "/Library/Developer/CoreSimulator/Profiles/Runtimes/" + runtimeFolder
+
+		var cmd *exec.Cmd
+		if _, err := os.Stat(userPath); err == nil {
+			// User-level — no sudo needed
+			cmd = exec.Command("rm", "-rf", userPath)
+		} else {
+			// System-level — requires sudo
+			cmd = exec.Command("sudo", "rm", "-rf", systemPath)
+		}
+
 		if err := cmd.Run(); err != nil {
 			return RuntimeDeletedMsg{Name: name, Err: err}
 		}
 
-		// Log the deletion
 		logDeletion(name)
-
 		return RuntimeDeletedMsg{Name: name}
 	}
 }
