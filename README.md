@@ -113,6 +113,12 @@ xzap --cli remove runtime "iOS 17.5" --force  # Force remove runtime without ask
 
 ---
 
+## Disclaimer
+
+XZap permanently deletes files and directories from your system. Always use `--dry-run` first to preview what will be removed. The authors are not responsible for any data loss resulting from use of this tool. Use at your own risk.
+
+---
+
 ## License
 
 MIT © [Apptitude Labs](https://github.com/ApptitudeLabs)
