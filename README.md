@@ -7,7 +7,7 @@
 ## Features
 
 - **Interactive TUI** — Beautiful terminal UI with tabs for Simulators, Caches, and Runtimes
-- **Clean** DerivedData, Archives, ModuleCache, SwiftPM Cache
+- **Clean** DerivedData, Archives, ModuleCache, Xcode Cache, iOS DeviceSupport, DocumentationCache, SwiftPM, CocoaPods, and Carthage caches
 - **List simulators** with storage usage, grouped by status
 - **Orphaned simulator detection** — Identifies simulators whose runtime was deleted
 - **Highlight critical simulators** (above 3GB or your threshold)
@@ -71,7 +71,7 @@ Use the `--cli` flag to access the traditional command-line interface:
 
 ```bash
 # Clean Xcode caches
-xzap --cli clean                              # Clean DerivedData, Archives, ModuleCache, SwiftPM
+xzap --cli clean                              # Clean all Xcode caches (see paths below)
 xzap --cli clean --dry-run                    # Preview what would be deleted
 
 # List and manage simulators
@@ -91,6 +91,25 @@ xzap --cli list runtimes                      # List installed Xcode runtimes
 xzap --cli remove runtime "iOS 17.5"          # Remove a specific runtime
 xzap --cli remove runtime "iOS 17.5" --force  # Force remove runtime without asking
 ```
+
+### What `clean` removes
+
+| Path | Description |
+|------|-------------|
+| `~/Library/Developer/Xcode/DerivedData` | Build artifacts |
+| `~/Library/Developer/Xcode/Archives` | App archives |
+| `~/Library/Developer/Xcode/ModuleCache.noindex` | Clang module cache |
+| `~/Library/Caches/com.apple.dt.Xcode` | Xcode app cache |
+| `~/Library/Developer/Xcode/iOS DeviceSupport` | Per-device debug symbols |
+| `~/Library/Developer/Xcode/DocumentationCache` | Downloaded doc sets |
+| `~/Library/Developer/Xcode/Products` | Build products |
+| `~/Library/Caches/org.swift.swiftpm` | SwiftPM package cache |
+| `~/.swiftpm` | SwiftPM global data |
+| `~/Library/Caches/CocoaPods` | CocoaPods cache |
+| `~/.cocoapods/repos` | CocoaPods spec repos |
+| `~/Library/Caches/org.carthage.CarthageKit` | Carthage build cache |
+
+Each path reports the space freed after deletion and is skipped gracefully if it doesn't exist.
 
 ---
 
